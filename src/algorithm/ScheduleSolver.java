@@ -127,7 +127,7 @@ public class ScheduleSolver {
             int day = timeSlot[0];
             int hour = timeSlot[1];
 
-            // בדיקת כל האילוצים הקשיחים בבת אחת (במקום continue)
+            // בדיקת כל האילוצים הקשיחים בבת אחת
             if (dailyWorkoutCount[day] < maxWorkoutsPerDay &&
                     currentReq.trainee.canTrainMuscle(currentReq.targetMuscle, day) &&
                     !isTraineeBusyThatDay(currentReq.trainee, day) &&
