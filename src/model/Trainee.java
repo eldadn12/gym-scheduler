@@ -28,6 +28,14 @@ public class Trainee {
     // מונה המעקב אחר כמות האימונים שכבר שובצו למתאמן בשבוע הנוכחי
     private int currentWorkoutCount = 0;
 
+    /**
+     * בנאי לאתחול מתאמן חדש במערכת.
+     * @param id מזהה המתאמן בבסיס הנתונים.
+     * @param name השם המלא של המתאמן.
+     * @param fitnessLevel רמת הכושר של המתאמן (קובעת את זמני המנוחה).
+     * @param goal מטרת האימון המרכזית שלו (קובעת את השרירים שיאמן).
+     * @param maxWorkoutsPerWeek מגבלת כמות האימונים שהמתאמן יכול לבצע בשבוע.
+     */
     public Trainee(int id, String name, FitnessLevel fitnessLevel, TrainingGoal goal, int maxWorkoutsPerWeek) {
         this.id = id;
         this.name = name;
@@ -40,6 +48,7 @@ public class Trainee {
 
     /**
      * הוספת שריר לרשימת הפציעות של המתאמן.
+     * @param muscle קבוצת השריר הפצועה שיש להימנע מלאמן אותה.
      */
     public void addInjury(MuscleGroup muscle) {
         this.injuredMuscles.add(muscle);
@@ -47,7 +56,10 @@ public class Trainee {
 
     /**
      * פונקציית אילוצים (Constraint) קריטית לאלגוריתם.
-     * בודקת האם המתאמן יכול לאמן שריר מסוים ביום ספציפי.
+     * בודקת האם המתאמן יכול לאמן שריר מסוים ביום ספציפי בהתאם למגבלות.
+     * @param muscle קבוצת השריר המיועדת לאימון.
+     * @param currentDay היום בשבוע בו מתוכנן האימון (0-6).
+     * @return true אם המתאמן כשיר לאמן שריר זה ביום המבוקש, false אחרת.
      */
     public boolean canTrainMuscle(MuscleGroup muscle, int currentDay) {
         // 1. חיתוך ענף: אם השריר פצוע, אי אפשר לאמן אותו בכלל
@@ -75,6 +87,8 @@ public class Trainee {
     /**
      * פונקציית "עשה" (DO) עבור אלגוריתם ה-Backtracking.
      * כאשר האלגוריתם מחליט לשבץ אימון, הוא מעדכן את היסטוריית השרירים ומעלה את מונה האימונים.
+     * @param muscle קבוצת השריר שאומנה זה עתה.
+     * @param day היום בשבוע שבו שובץ האימון.
      */
     public void updateMuscleTraining(MuscleGroup muscle, int day) {
         trainedMusclesHistory.putIfAbsent(muscle, new ArrayList<>());
@@ -86,6 +100,7 @@ public class Trainee {
      * פונקציית "בטל" (UNDO / Backtrack) עבור אלגוריתם ה-Backtracking.
      * כאשר האלגוריתם מגיע למבוי סתום וחוזר אחורה (נסיגה), הוא חייב לבטל את הרישום של האימון
      * האחרון שבוצע לאותו שריר, ולהוריד את מונה האימונים הכללי.
+     * @param muscle קבוצת השריר שיש למחוק עבורה את השיבוץ האחרון.
      */
     public void undoMuscleTraining(MuscleGroup muscle) {
         List<Integer> days = trainedMusclesHistory.get(muscle);
@@ -98,6 +113,7 @@ public class Trainee {
     /**
      * פונקציה המתרגמת את מטרת העל של המתאמן (למשל "חיטוב")
      * לרשימה פרקטית של קבוצות שרירים שהאלגוריתם צריך לשבץ לו במהלך השבוע.
+     * @return רשימה של קבוצות שריר להן המתאמן זקוק, ללא שרירים פצועים.
      */
     public List<MuscleGroup> getRequiredWorkouts() {
         // שימוש ב-Switch Expression (פיצ'ר מתקדם ב-Java) כדי לבנות את הרשימה במהירות
@@ -124,16 +140,28 @@ public class Trainee {
 
     // ================= Getters =================
 
+    /** @return מזהה המתאמן. */
     public int getId() { return id; }
+
+    /** @return שם המתאמן. */
     public String getName() { return name; }
+
+    /** @return רמת הכושר של המתאמן. */
     public FitnessLevel getFitnessLevel() { return fitnessLevel; }
+
+    /** @return מטרת האימון של המתאמן. */
     public TrainingGoal getGoal() { return goal; }
+
+    /** @return מגבלת האימונים השבועית. */
     public int getMaxWorkoutsPerWeek() { return maxWorkoutsPerWeek; }
+
+    /** @return קבוצת השרירים הפצועים של המתאמן. */
     public Set<MuscleGroup> getInjuredMuscles() { return injuredMuscles; }
 
     /**
      * דריסה של toString כדי שכאשר נציג את המתאמן ברשימות נגללות (ComboBox) בממשק המשתמש,
      * יופיע השם שלו בצורה נקייה ולא כתובת זיכרון.
+     * @return שם המתאמן.
      */
     @Override
     public String toString() {

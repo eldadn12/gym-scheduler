@@ -17,7 +17,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * המחלקה הראשית של הממשק הגרפי.
+ * המחלקה הראשית של הממשק הגרפי (GUI) למערכת שיבוץ האימונים.
+ * מבוססת על JavaFX ואחראית על תצוגת חלון התוכנה, ניהול האינטראקציה עם המשתמש,
+ * תקשורת מול מסד הנתונים (DatabaseRepository) והפעלת אלגוריתם השיבוץ (ScheduleSolver).
  * ב-JavaFX, כל חלון יורש מהמחלקה Application.
  */
 public class ScheduleUI extends Application {
@@ -45,7 +47,10 @@ public class ScheduleUI extends Application {
     private ComboBox<Trainer> updateTrainerCombo = new ComboBox<>();
 
     /**
+     * נקודת הכניסה הראשית של אפליקציית JavaFX.
+     * הפונקציה בונה את מבנה החלון הראשי, מאגדת את הפאנלים השונים ומגדירה את התנהגות המערכת.
      * פונקציית ה-start היא נקודת ההתחלה של JavaFX. היא בונה את החלון הראשי.
+     * * @param primaryStage החלון (הבמה) הראשי שעליו מוצגת האפליקציה.
      */
     @Override
     public void start(Stage primaryStage) {
@@ -89,6 +94,12 @@ public class ScheduleUI extends Application {
     // ==========================================
     // בניית לוח השעות (הגריד המרכזי)
     // ==========================================
+
+    /**
+     * בונה את רכיב הטבלה (GridPane) המייצג את לוח השעות השבועי.
+     * כולל את כותרות הימים, שעות הפעילות והכנת המשבצות (תאים) שאליהן ישובצו האימונים.
+     * * @return אובייקט GridPane מוכן המכיל את תשתית לוח הזמנים הריקה.
+     */
     private GridPane createScheduleGrid() {
         // GridPane הוא פאנל שמסדר אלמנטים בצורת טבלה (שורות ועמודות)
         GridPane scheduleGrid = new GridPane();
@@ -150,6 +161,11 @@ public class ScheduleUI extends Application {
     // ==========================================
     // בניית פאנל ניהול המתאמנים (צד ימין)
     // ==========================================
+
+    /**
+     * בונה את פאנל הניהול הימני האחראי על פעולות הקשורות למתאמנים (הוספה ומחיקה).
+     * * @return אובייקט VBox המכיל את כל רכיבי הממשק (טפסים, כפתורים) לניהול מתאמנים.
+     */
     private VBox createTraineeManagementPanel() {
         VBox panel = new VBox(20);
         panel.setPadding(new Insets(10));
@@ -225,6 +241,12 @@ public class ScheduleUI extends Application {
     // ==========================================
     // בניית פאנל ניהול המאמנים (צד שמאל)
     // ==========================================
+
+    /**
+     * בונה את פאנל הניהול השמאלי האחראי על פעולות הקשורות לצוות ההדרכה.
+     * מאפשר הוספת מאמנים, הגדרת ימי חופש ומחיקת מאמנים.
+     * * @return אובייקט VBox המכיל את רכיבי הממשק לניהול צוות ההדרכה.
+     */
     private VBox createTrainerManagementPanel() {
         VBox panel = new VBox(20);
         panel.setPadding(new Insets(10));
@@ -334,6 +356,12 @@ public class ScheduleUI extends Application {
     // ==========================================
     // לוגיקת ריצה ורענון הלוח המרכזי
     // ==========================================
+
+    /**
+     * מרעננת את לוח הזמנים ואת נתוני המערכת.
+     * הפונקציה מנקה את הלוח הקיים, שולפת את הנתונים המעודכנים ביותר ממסד הנתונים,
+     * מריצה את פותר הבעיות (אלגוריתם השיבוץ) מחדש, ומציירת את התוצאות על גבי הגריד.
+     */
     private void refreshSchedule() {
         // 1. ניקוי כל המשבצות בלוח מהרצת האלגוריתם הקודמת
         for (int d = 0; d < DAYS_COUNT; d++) {
@@ -364,6 +392,7 @@ public class ScheduleUI extends Application {
 
     /**
      * פונקציה לייצור כרטיסיית אימון (המלבן הכחול) ומיקומה בתוך המשבצת הנכונה בגריד.
+     * * @param assignment אובייקט השיבוץ המכיל את פרטי האימון (מתאמן, מאמן, יום ושעה).
      */
     private void addAssignmentToGrid(Assignment assignment) {
         int day = assignment.getDay();
@@ -404,7 +433,10 @@ public class ScheduleUI extends Application {
     }
 
     /**
-     * פונקציית עזר להקפצת חלונות הודעה (הצלחה/שגיאה) למשתמש
+     * פונקציית עזר להקפצת חלונות הודעה (הצלחה/שגיאה) למשתמש.
+     * * @param title הכותרת שתוצג בראש החלונית.
+     * @param content התוכן והטקסט המפרט את ההודעה.
+     * @param type סוג ההתראה (משפיע על האייקון שיוצג בחלונית, למשל ERROR או INFORMATION).
      */
     private void showAlert(String title, String content, Alert.AlertType type) {
         Alert alert = new Alert(type);
@@ -414,6 +446,10 @@ public class ScheduleUI extends Application {
         alert.showAndWait();
     }
 
+    /**
+     * הפונקציה הראשית המפעילה את התוכנית כולה (נקודת הכניסה של הפרויקט).
+     * * @param args ארגומנטים משורת הפקודה.
+     */
     public static void main(String[] args) {
         launch(args); // הפעלת האפליקציה (קריאה ל-start מאחורי הקלעים)
     }

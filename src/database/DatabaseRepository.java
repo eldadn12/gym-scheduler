@@ -26,6 +26,7 @@ public class DatabaseRepository {
 
     /**
      * שליפת כל האימונים ממסד הנתונים, כולל רשימת השרירים שכל אימון מפעיל.
+     * @return רשימה (List) של אובייקטי Workout המייצגים את כל האימונים הקיימים במסד.
      */
     public List<Workout> getAllWorkouts() {
         List<Workout> workouts = new ArrayList<>();
@@ -56,6 +57,10 @@ public class DatabaseRepository {
 
     /**
      * פונקציית עזר: שולפת את כל השרירים המשויכים לאימון ספציפי מתוך טבלה מקשרת.
+     * @param conn אובייקט חיבור פעיל למסד הנתונים.
+     * @param workoutId המזהה הייחודי של האימון (ID) עבורו מחפשים את השרירים.
+     * @return רשימה של קבוצות שריר (MuscleGroup) השייכות לאימון המבוקש.
+     * @throws SQLException נזרקת במקרה של שגיאה בשאילתת ה-SQL או בכשל תקשורת למסד הנתונים.
      */
     private List<MuscleGroup> getWorkoutMuscles(Connection conn, int workoutId) throws SQLException {
         List<MuscleGroup> muscles = new ArrayList<>();
@@ -76,6 +81,7 @@ public class DatabaseRepository {
 
     /**
      * שליפת כל המאמנים ממסד הנתונים, כולל היום החופשי והתמחויות.
+     * @return רשימה של אובייקטי Trainer המייצגים את כל המאמנים הפעילים.
      */
     public List<Trainer> getAllTrainers() {
         List<Trainer> trainers = new ArrayList<>();
@@ -106,6 +112,10 @@ public class DatabaseRepository {
 
     /**
      * פונקציית עזר: שולפת את ההתמחויות של מאמן ספציפי.
+     * @param conn אובייקט חיבור פעיל למסד הנתונים.
+     * @param trainerId המזהה הייחודי של המאמן (ID).
+     * @return רשימה של התמחויות (MuscleGroup) המשויכות לאותו מאמן.
+     * @throws SQLException נזרקת במקרה של שגיאה בשאילתת ה-SQL.
      */
     private List<MuscleGroup> getTrainerSpecialties(Connection conn, int trainerId) throws SQLException {
         List<MuscleGroup> specialties = new ArrayList<>();
@@ -123,6 +133,7 @@ public class DatabaseRepository {
 
     /**
      * שליפת כל המתאמנים מהמסד, כולל רמת כושר, מטרה ופציעות.
+     * @return רשימה מעודכנת של אובייקטי Trainee מתוך מסד הנתונים.
      */
     public List<Trainee> getAllTrainees() {
         List<Trainee> trainees = new ArrayList<>();
@@ -155,6 +166,9 @@ public class DatabaseRepository {
 
     /**
      * פונקציית עזר: טוענת את כל הפציעות של מתאמן ספציפי ומוסיפה אותן לאובייקט שלו.
+     * @param conn אובייקט חיבור פעיל למסד הנתונים.
+     * @param trainee אובייקט המתאמן שעבורו שולפים ומעדכנים את רשימת הפציעות.
+     * @throws SQLException נזרקת במקרה של כשל תקשורת או שגיאת SQL.
      */
     private void loadTraineeInjuries(Connection conn, Trainee trainee) throws SQLException {
         String query = "SELECT muscle_group FROM Trainee_Injuries WHERE trainee_id = ?";
@@ -174,6 +188,11 @@ public class DatabaseRepository {
 
     /**
      * הוספת מתאמן חדש למסד הנתונים (Create).
+     * @param name שמו של המתאמן החדש.
+     * @param level רמת הכושר של המתאמן.
+     * @param goal מטרת האימון של המתאמן.
+     * @param maxWorkouts כמות האימונים המקסימלית הרצויה בשבוע.
+     * @return true אם המתאמן נוסף בהצלחה למסד הנתונים, false אם ארעה שגיאה בביצוע.
      */
     public boolean addTrainee(String name, FitnessLevel level, TrainingGoal goal, int maxWorkouts) {
         String query = "INSERT INTO Trainees (name, fitness_level, goal, max_workouts) VALUES (?, ?, ?, ?)";
@@ -200,6 +219,8 @@ public class DatabaseRepository {
     /**
      * מחיקת מתאמן ממסד הנתונים (Delete).
      * הערה לבוחן: הפציעות שלו בטבלה המקשרת יימחקו אוטומטית בזכות מנגנון ה-CASCADE המוגדר ב-DB.
+     * @param traineeId המזהה הייחודי של המתאמן (ID) המיועד למחיקה.
+     * @return true אם המחיקה בוצעה בהצלחה ורשומות הושפעו, false אחרת.
      */
     public boolean deleteTrainee(int traineeId) {
         String query = "DELETE FROM Trainees WHERE id = ?";
@@ -226,6 +247,9 @@ public class DatabaseRepository {
      * הוספת מאמן חדש למסד הנתונים (כולל ההתמחויות שלו בטבלה המקשרת).
      * פונקציה זו משתמשת ב"טרנזקציה" (Transaction) כדי להבטיח שגם המאמן וגם ההתמחויות
      * שלו נשמרים יחד. אם אחד נכשל, הכל מבוטל (Rollback).
+     * @param name שמו של המאמן החדש להוספה.
+     * @param specialties רשימת קבוצות השריר בהן המאמן מתמחה ואותן הוא רשאי להדריך.
+     * @return true אם הטרנזקציה עברה בהצלחה (Commit), false במקרה שחלק נכשל והכל בוטל (Rollback).
      */
     public boolean addTrainer(String name, List<MuscleGroup> specialties) {
         String insertTrainer = "INSERT INTO Trainers (name, day_off) VALUES (?, ?)";
@@ -298,6 +322,8 @@ public class DatabaseRepository {
     /**
      * מחיקת מאמן (Delete).
      * ההתמחויות שלו יימחקו אוטומטית מטבלת Trainer_Specialties בגלל הגדרת ה-ON DELETE CASCADE במסד.
+     * @param trainerId המזהה הייחודי (ID) של המאמן שיש למחוק.
+     * @return true אם פעולת המחיקה בוצעה בהצלחה, false אחרת.
      */
     public boolean deleteTrainer(int trainerId) {
         String query = "DELETE FROM Trainers WHERE id = ?";
@@ -314,6 +340,9 @@ public class DatabaseRepository {
     /**
      * עדכון (Update) היום החופשי של המאמן.
      * מקבל את ה-ID של המאמן ואת היום החדש (0 = ראשון, 6 = שבת).
+     * @param trainerId המזהה הייחודי של המאמן שיש לעדכן את נתוניו.
+     * @param dayOff אינדקס יום החופש החדש (לדוגמה: 0 ליום ראשון, 5 ליום שישי).
+     * @return true אם העדכון עבר בהצלחה בטבלה, false אם ארעה שגיאה.
      */
     public boolean updateTrainerDayOff(int trainerId, int dayOff) {
         String query = "UPDATE Trainers SET day_off = ? WHERE id = ?";
