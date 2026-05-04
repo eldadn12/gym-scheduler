@@ -116,7 +116,12 @@ public class Trainee {
      * @return רשימה של קבוצות שריר להן המתאמן זקוק, ללא שרירים פצועים.
      */
     public List<MuscleGroup> getRequiredWorkouts() {
-        // שימוש ב-Switch Expression (פיצ'ר מתקדם ב-Java) כדי לבנות את הרשימה במהירות
+        // הגנה: אם מסיבה כלשהי האוסף הוא null, נאתחל אותו כדי למנוע קריסה
+        if (this.injuredMuscles == null) {
+            this.injuredMuscles = new HashSet<>();
+        }
+
+        // בניית הרשימה לפי המטרה
         List<MuscleGroup> requirements = switch (this.goal) {
             case STRENGTH -> new ArrayList<>(Arrays.asList(
                     MuscleGroup.CHEST, MuscleGroup.BACK, MuscleGroup.LEGS,
@@ -132,8 +137,14 @@ public class Trainee {
                     MuscleGroup.FULL_BODY, MuscleGroup.CARDIO));
         };
 
-        // סינון חכם: מסיר אוטומטית מהדרישות השבועיות כל שריר שמופיע ברשימת הפציעות!
+        //  הסרת שרירים פצועים
         requirements.removeIf(injuredMuscles::contains);
+
+        //  הגבלת כמות הדרישות לפי maxWorkoutsPerWeek
+        // אם למשל המטרה דורשת 5 אימונים אבל המתאמן הגביל ל-3, ניקח רק את ה-3 הראשונים
+        if (requirements.size() > this.maxWorkoutsPerWeek) {
+            requirements = new ArrayList<>(requirements.subList(0, this.maxWorkoutsPerWeek));
+        }
 
         return requirements;
     }

@@ -6,27 +6,24 @@ import java.util.Objects;
 
 /**
  * מחלקה המייצגת מאמן אישי במערכת.
- * שומרת את פרטי המאמן, ההתמחויות שלו (אילו שרירים הוא מוסמך לאמן), ואת יום החופש שלו.
- * בנוסף, המחלקה מנהלת יומן זמינות פנימי (מערך דו-ממדי) המשמש את אלגוריתם השיבוץ בזמן אמת.
+ * כוללת אופטימיזציה של הזיכרון: המערך הדו-ממדי צומצם ל-13 שעות פעילות בלבד (08:00-20:00).
  */
 public class Trainer {
     private int id;
     private String name;
     private List<MuscleGroup> specialties;
-
-    // התכונה החדשה מהמסד: היום החופשי הקבוע של המאמן (0 = ראשון, 6 = שבת)
     private int dayOff;
 
-    // יומן פנימי שהאלגוריתם מנהל כדי למנוע כפל שיבוצים באותה שעה
-    // לא מגיע מה-DB! מאותחל כריק (false) בכל פעם שמריצים את האלגוריתם
+    // קבועים לניהול ה-Offset של השעות
+    private static final int START_HOUR = 8;
+    private static final int END_HOUR = 20;
+    private static final int HOURS_COUNT = END_HOUR - START_HOUR + 1; // 13 שעות
+
+    // מערך זיכרון מצומצם: 7 ימים, 13 שעות בכל יום
     private boolean[][] bookedSlots;
 
     /**
      * בנאי לאתחול מאמן חדש במערכת.
-     * @param id מזהה המאמן בבסיס הנתונים.
-     * @param name שמו המלא של המאמן.
-     * @param specialties רשימת קבוצות השרירים שהמאמן מוסמך להעביר בהן אימון.
-     * @param dayOff היום החופשי הקבוע של המאמן (0 מייצג את ראשון, 6 את שבת).
      */
     public Trainer(int id, String name, List<MuscleGroup> specialties, int dayOff) {
         this.id = id;
@@ -34,73 +31,57 @@ public class Trainer {
         this.specialties = specialties;
         this.dayOff = dayOff;
 
-        // יצירת יומן ריק (7 ימים, 24 שעות)
-        this.bookedSlots = new boolean[7][24];
+        // אתחול מערך מצומצם לחיסכון בזיכרון
+        this.bookedSlots = new boolean[7][HOURS_COUNT];
     }
 
     // ================= Getters =================
 
-    /** @return מזהה המאמן בבסיס הנתונים. */
     public int getId() { return id; }
-
-    /** @return שמו של המאמן. */
     public String getName() { return name; }
-
-    /** @return רשימת ההתמחויות (קבוצות שריר) שהמאמן יודע להעביר. */
     public List<MuscleGroup> getSpecialties() { return specialties; }
-
-    /** @return היום החופשי של המאמן (0-6). */
     public int getDayOff() { return dayOff; }
 
-    // ================= לוגיקת זמינות לאלגוריתם =================
+    // ================= לוגיקת זמינות עם Offset =================
 
     /**
      * בדיקה האם המאמן פנוי ביום ובשעה המסוימים.
-     * @param day היום המבוקש לשיבוץ (0-6).
-     * @param hour השעה המבוקשת לשיבוץ (0-23).
-     * @return true אם המאמן פנוי (אינו ביום חופש ואינו משובץ לאימון אחר), false אם הוא תפוס.
      */
     public boolean isAvailable(int day, int hour) {
-        // 1. האם זה היום החופשי שלו מה-DB?
+        // בדיקת גבולות - אם השעה מחוץ לטווח הפעילות (8-20) הוא לא פנוי
+        if (hour < START_HOUR || hour > END_HOUR) {
+            return false;
+        }
+
+        // 1. האם זה היום החופשי שלו?
         if (day == this.dayOff) {
             return false;
         }
 
-        // 2. האם האלגוריתם כבר קבע לו אימון בשעה הזו?
-        if (this.bookedSlots[day][hour]) {
-            return false; // השעה הזו כבר שובצה!
-        }
-
-        return true; // המאמן פנוי
+        // 2. בדיקה במערך המצומצם באמצעות היסט (hour - 8)
+        return !this.bookedSlots[day][hour - START_HOUR];
     }
 
     /**
-     * פונקציה שהאלגוריתם מפעיל כדי "לתפוס" שעה (שלב ה-Do ב-Backtracking).
-     * מסמנת את המשבצת ביומן המאמן כתפוסה.
-     * @param day יום השיבוץ.
-     * @param hour שעת השיבוץ.
+     * סימון משבצת כתפוסה (שלב ה-Do ב-Backtracking).
      */
     public void bookSlot(int day, int hour) {
-        this.bookedSlots[day][hour] = true;
+        if (hour >= START_HOUR && hour <= END_HOUR) {
+            this.bookedSlots[day][hour - START_HOUR] = true;
+        }
     }
 
     /**
-     * פונקציה שהאלגוריתם מפעיל כדי לבטל שיבוץ (שלב ה-Undo / Backtrack).
-     * משחררת את המשבצת ביומן המאמן בחזרה להיות פנויה.
-     * @param day יום השיבוץ שיש לבטל.
-     * @param hour שעת השיבוץ שיש לבטל.
+     * שחרור משבצת (שלב ה-Undo ב-Backtracking).
      */
     public void freeSlot(int day, int hour) {
-        this.bookedSlots[day][hour] = false;
+        if (hour >= START_HOUR && hour <= END_HOUR) {
+            this.bookedSlots[day][hour - START_HOUR] = false;
+        }
     }
 
-    // ================= Equals & HashCode (חשוב למפות Hash באלגוריתם) =================
+    // ================= Equals & HashCode =================
 
-    /**
-     * השוואה בין מאמנים מתבצעת על בסיס מזהה המאמן (ID) בלבד.
-     * @param o האובייקט להשוואה.
-     * @return true אם מדובר באותו מאמן, false אחרת.
-     */
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -109,19 +90,11 @@ public class Trainer {
         return id == trainer.id;
     }
 
-    /**
-     * יצירת קוד Hash ייחודי למאמן מבוסס על ה-ID שלו.
-     * @return קוד ה-Hash.
-     */
     @Override
     public int hashCode() {
         return Objects.hash(id);
     }
 
-    /**
-     * דריסה של toString כדי להציג את שם המאמן בממשק המשתמש (למשל ב-ComboBox) בצורה תקינה.
-     * @return שם המאמן.
-     */
     @Override
     public String toString() {
         return this.name;
